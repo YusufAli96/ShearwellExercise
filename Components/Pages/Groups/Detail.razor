@@ -1,0 +1,77 @@
+﻿@page "/Groups/Detail/{id:guid}"
+@using ShearwellExercise.Interface
+@using ShearwellExercise.Models
+@inject IDatabaseDAL _groupDAL
+@rendermode InteractiveServer
+
+<h3>Detail</h3>
+
+
+@if (!isLoading)
+{
+    <div class="row">
+        <div class="col">
+            Name: @group.Name
+        </div>
+        <div class="col">
+            Created On: @group.DateTimeCreated
+        </div>
+    </div>
+
+    <br />
+    <br />
+
+
+<MudDataGrid Items="@group.AnimalForGroups" Filterable="false" SortMode="@SortMode.None" Groupable="false">
+    <Columns>
+        <PropertyColumn Property="x => x.Id" />
+        <PropertyColumn Property="x => x.Animal.Tag" />
+        <PropertyColumn Property="x => x.Animal.DateOfBirth" />
+        <TemplateColumn CellClass="d-flex justify-end">
+            <CellTemplate>
+                <MudStack Row>
+                    <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary" @onclick="(() => Remove(context.Item))">Remove</MudButton>
+                </MudStack>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
+}
+
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private Group group;
+    private bool isLoading = true;
+    private bool isEditing = true;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        Load();
+    }
+
+    void Load()
+    {
+        isLoading = true;
+        group = _groupDAL.GetGroup(Id);
+        isLoading = false;
+
+        StateHasChanged();
+
+    }
+
+    void Remove(AnimalForGroup animalForGroup)
+    {
+        _groupDAL.RemoveLink(animalForGroup);
+        Load();
+    }
+}

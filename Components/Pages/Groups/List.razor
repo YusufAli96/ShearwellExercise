@@ -1,0 +1,43 @@
+﻿@page "/Groups"
+@using ShearwellExercise.DAL
+@using ShearwellExercise.Interface
+@using ShearwellExercise.Models
+
+@inject IDatabaseDAL _groupDAL
+@inject NavigationManager _navigation
+
+
+<h3>List</h3>
+
+
+<MudTable Items="@groups" Hover="true" Loading="@isLoading" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        <MudTh>Id</MudTh>
+        <MudTh>Tag</MudTh>
+        <MudTh>Date Of Birth</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>@context.Id</MudTd>
+        <MudTd>@context.Name</MudTd>
+        <MudTd>@context.DateTimeCreated</MudTd>
+        <MudTd><a href="/Groups/Detail/@context.Id">View</a></MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+
+    private List<Group> groups = new();
+    private bool isLoading = true;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        _groupDAL.CreateGroups();
+        _groupDAL.CreateAnimals();
+
+        groups = _groupDAL.GetGroups();
+        isLoading = false;
+    }
+}
