@@ -1,20 +1,24 @@
 ﻿@page "/Groups/Detail/{id:guid}"
 @using ShearwellExercise.Interface
 @using ShearwellExercise.Models
-@inject IDatabaseDAL _groupDAL
+@inject IGroupDAL _groupDAL
+@inject IAnimalForGroupDAL _animalForGroupDAL
+@inject ISnackbar _snackbar
+@inject NavigationManager _navigationManager
 @rendermode InteractiveServer
 
-<h3>Detail</h3>
+
+<h3 class="mb-3">Group </h3>
 
 
-@if (!isLoading)
+@if (!_isLoading)
 {
     <div class="row">
         <div class="col">
-            Name: @group.Name
+            Name: @_group.Name
         </div>
         <div class="col">
-            Created On: @group.DateTimeCreated
+            Created On: @_group.DateTimeCreated
         </div>
     </div>
 
@@ -22,15 +26,17 @@
     <br />
 
 
-<MudDataGrid Items="@group.AnimalForGroups" Filterable="false" SortMode="@SortMode.None" Groupable="false">
+<MudDataGrid Items="@_group.AnimalForGroups" Filterable="false" SortMode="@SortMode.None" Groupable="false">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Animals</MudText>
+        </ToolBarContent>
     <Columns>
-        <PropertyColumn Property="x => x.Id" />
-        <PropertyColumn Property="x => x.Animal.Tag" />
+        <PropertyColumn Property="x => x.Animal.TagFormat" />
         <PropertyColumn Property="x => x.Animal.DateOfBirth" />
         <TemplateColumn CellClass="d-flex justify-end">
             <CellTemplate>
                 <MudStack Row>
-                    <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Primary" @onclick="(() => Remove(context.Item))">Remove</MudButton>
+                    <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Error" @onclick="(() => Remove(context.Item))">Remove</MudButton>
                 </MudStack>
             </CellTemplate>
         </TemplateColumn>
@@ -43,35 +49,47 @@
     [Parameter]
     public Guid Id { get; set; }
 
-    private Group group;
-    private bool isLoading = true;
-    private bool isEditing = true;
+    private Group _group;
+    private bool _isLoading = true;
+    private bool _isEditing = true;
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnParametersSet();
-
-        Load();
+        await Load();
+        await base.OnInitializedAsync();
     }
 
-    void Load()
+    private async Task Load()
     {
-        isLoading = true;
-        group = _groupDAL.GetGroup(Id);
-        isLoading = false;
+        _isLoading = true;
+        _group = await _groupDAL.Get(Id);
+
+        if (_group == null)
+        {
+            _snackbar.Add("Group not found", Severity.Error);
+            _navigationManager.NavigateTo("/Groups");
+        }
+
+        _isLoading = false;
 
         StateHasChanged();
 
     }
 
-    void Remove(AnimalForGroup animalForGroup)
+    private async Task Remove(AnimalForGroup animalForGroup)
     {
-        _groupDAL.RemoveLink(animalForGroup);
-        Load();
+        bool success = await _animalForGroupDAL.Delete(animalForGroup);
+
+        if (success)
+        {
+            _snackbar.Add("Animal removed from group", Severity.Success);
+            await Load();
+        }
+
     }
 }

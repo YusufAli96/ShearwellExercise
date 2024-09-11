@@ -1,26 +1,26 @@
-﻿@page "/Groups"
+﻿@page "/"
+@page "/Groups"
 @using ShearwellExercise.DAL
 @using ShearwellExercise.Interface
 @using ShearwellExercise.Models
 
-@inject IDatabaseDAL _groupDAL
+@inject IGroupDAL _groupDAL
 @inject NavigationManager _navigation
 
 
-<h3>List</h3>
-
+<h3 class="mb-3">Groups</h3>
 
 <MudTable Items="@groups" Hover="true" Loading="@isLoading" LoadingProgressColor="Color.Info">
     <HeaderContent>
-        <MudTh>Id</MudTh>
         <MudTh>Tag</MudTh>
         <MudTh>Date Of Birth</MudTh>
+        <MudTh>Animal Count</MudTh>
         <MudTh></MudTh>
     </HeaderContent>
     <RowTemplate>
-        <MudTd>@context.Id</MudTd>
         <MudTd>@context.Name</MudTd>
         <MudTd>@context.DateTimeCreated</MudTd>
+        <MudTd>@context.AnimalForGroups.Count</MudTd>
         <MudTd><a href="/Groups/Detail/@context.Id">View</a></MudTd>
     </RowTemplate>
 </MudTable>
@@ -30,14 +30,13 @@
     private List<Group> groups = new();
     private bool isLoading = true;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
+        await _groupDAL.CreateGroups();
 
-        _groupDAL.CreateGroups();
-        _groupDAL.CreateAnimals();
-
-        groups = _groupDAL.GetGroups();
+        groups = await _groupDAL.GetAll();
         isLoading = false;
+
+        await base.OnInitializedAsync();
     }
 }

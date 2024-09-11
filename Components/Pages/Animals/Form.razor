@@ -1,0 +1,95 @@
+﻿@page "/Animal/Create"
+@using ShearwellExercise.Interface
+@using ShearwellExercise.Models
+@inject IAnimalDAL _animalDAL
+@inject IGroupDAL _groupDAL
+@inject IAnimalForGroupDAL _animalForGroupDAL
+@inject ISnackbar _snackbar
+@rendermode InteractiveServer
+
+
+<h3 class="mb-3">Create Animal</h3>
+
+<EditForm Model="_animal" OnValidSubmit="Save" OnInvalidSubmit="Invalid" class="row">
+    <DataAnnotationsValidator />
+
+    @if (!_valid)
+    {
+        <ValidationSummary />
+    }
+
+    <div class="row">
+        <div class="col">
+            <MudTextField @bind-Value="_animal.Tag" Label="Tag" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentText="UK" Mask="@(new PatternMask("0000000 00000"))"></MudTextField>
+        </div>
+        <div class="col">
+            <MudDatePicker Label="Date of Birth" Variant="Variant.Outlined" @bind-Date="_dateTime" />
+        </div>
+        <div class="col">
+            <MudSelect T="Guid" Label="Groups" Variant="Variant.Outlined" MultiSelection="true" AnchorOrigin="Origin.BottomCenter" Placeholder="None" @bind-SelectedValues="_selectedGroups" ToStringFunc="GetGroupName">
+                @foreach (var group in _allGroups)
+                {
+                    <MudSelectItem T="Guid" Value="@group.Id">@group.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
+        <div class="col">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="mt-3" ButtonType="ButtonType.Submit">Submit</MudButton>
+        </div>
+    </div>
+
+</EditForm>
+
+@code {
+    Animal _animal = new();
+    List<Group> _allGroups = new();
+    IEnumerable<Guid> _selectedGroups = new List<Guid>();
+    DateTime? _dateTime;
+    bool _valid = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task Load()
+    {
+        _animal = new();
+        _allGroups = await _groupDAL.GetAll();
+        _selectedGroups = new List<Guid>();
+
+        _dateTime = DateTime.Parse("01/01/2015");
+
+        _valid = true;
+        StateHasChanged();
+    }
+
+    private string GetGroupName(Guid id)
+    {
+        var group = _allGroups.FirstOrDefault(g => g.Id == id);
+        return group?.Name ?? "Unknown";
+    }
+
+    private void Invalid()
+    {
+        _valid = false;
+    }
+
+    private async Task Save()
+    {
+        _valid = true;
+        _animal.DateOfBirth = _dateTime.Value;
+
+        Guid animalID = await _animalDAL.Create(_animal);
+
+        if (animalID != Guid.Empty)
+        {
+            List<AnimalForGroup> animalForGroups = _selectedGroups.Select(g => new AnimalForGroup { GroupId = g, AnimalId = animalID, CreatedDateTime = DateTime.Now }).ToList();
+            await _animalForGroupDAL.Create(animalForGroups);       
+
+            _snackbar.Add("New animal created", Severity.Success);
+        }
+        await Load();
+    }
+}
